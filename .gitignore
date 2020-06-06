@@ -1,4 +1,5 @@
+tempCodeRunnerFile.py
 *.vscode
 *.json
 *.pickle
-tempCodeRunnerFile.py
+*.txt

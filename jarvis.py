@@ -14,6 +14,7 @@ import webbrowser
 import random
 import smtplib
 import pytz
+import subprocess
 
 
 # If modifying these scopes, delete the file token.pickle.
@@ -21,7 +22,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 DAY_EXTENSIONS = ["rd", "th", "st", "nd"]
-CALENDAR_STRS = ["what do i have", "do i have plans","am i busy"] 
+
 
 def speak(text):
     engine = pyttsx3.init('sapi5')
@@ -83,7 +84,7 @@ def get_events(day, service):
             if int(start_time.split(":")[0]) < 12:
                 start_time = start_time + "am"
             else:
-                start_time = str(int(start_time.split(":")[0]) - 12)
+                start_time = str(int(start_time.split(":")[0]) - 12) + start_time.split(":")[1]
                 start_time = start_time + "pm"
             
             speak(event["summary"] + " at " + start_time)
@@ -91,7 +92,6 @@ def get_events(day, service):
 
 def get_date(text):
     # Deriving date from text representing speech
-    text = text.lower()
     today = datetime.date.today()
 
     if text.count("today") > 0:
@@ -164,93 +164,124 @@ def takeCommand():
     '''
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        print("Listening...")
+        # print("Listening...")
         r.pause_threshold = 1
         text = r.listen(source)
 
     try:
-        print("Recognizing...")
+        # print("Recognizing...")
         text =  r.recognize_google(text, language = 'en-in')
         print(f"User said: {text}\n")
 
     except Exception as e:
         # print(e)
-        print("Please try again.")
+        # print("Please try again.")
         return "None"
-    return text
+    return text.lower()
 
-if __name__ == "__main__":
+def note(text):
+    date = datetime.datetime.now()
+    file_name = str(date).replace(":", "-") + "-note.txt"
+    with open(file_name, "w") as f:
+        f.write(text)
 
-    service = authenticate_google()
-    wishMe()
+    subprocess.Popen(["notepad.exe", file_name])
 
-    while True:
-        text = takeCommand().lower()
+# if __name__ == "__main__":
 
-        if 'event'in text:
-            # speak('sure sir, what should i look for?')
-            # text = takeCommand().lower()
-            try:
-                for phrase in CALENDAR_STRS:
-                    if phrase in text:
-                        date = get_date(text)
-                        if date:
-                            get_events(date, service)
-            except Exception as e:
-                # print(e)
-                speak('Please try again.')
-             
+    # note('Python programming is fun!')
+wake = "hey jarvis"
+service = authenticate_google()
+print("Start")
+# wishMe()
+
+while True:
+    print("Listening...")
+    text = takeCommand()
+
+    if text.count(wake) > 0:
+        speak('I am Ready.')
+        text = takeCommand()
+    # Checking Calender for any upcoming events
+    # if 'event'in text:
+        # speak('sure sir, what should i look for?')
+        # text = takeCommand()
+        # try:
+    CALENDAR_STRS = ["what do i have", "do i have plans","am i busy"]
+    for phrase in CALENDAR_STRS:
+        if phrase in text:
             date = get_date(text)
-            get_events(date, service) 
-             
+            if date:
+                get_events(date, service)
+            else:
+                speak("I don't understand.")
+                    
+        # except Exception as e:
+        #     # print(e)
+        #     speak('Please try again.')
+            
+        # date = get_date(text)
+        # get_events(date, service) 
+            
+    #Make a Note using SpeechToText
+    NOTE_STRS = ["make a note", "write this down", "remember this"]
+    # elif 'note' in text:
+    for phrase in NOTE_STRS:
+        if phrase in text:
+            speak('what would you like me to write down?')
+            note_text = takeCommand()
+            note(note_text)
+            speak("I've made a note of that.")
 
-        #searching wikipedia based on text
-        elif 'wikipedia' in text:
-            speak('Searching Wikipedia...')
-            text = text.replace("wikipedia","")
-            results = wikipedia.summary(text, sentences = 2)
-            speak("According to Wikipedia")
-            print(results)
-            speak(results)
-        
-        #opening youtube
-        elif 'open youtube' in text:
-            webbrowser.open("youtube.com")
+    #searching wikipedia based on text
+    if 'wikipedia' in text:
+        speak('Searching Wikipedia...')
+        text = text.replace("wikipedia","")
+        results = wikipedia.summary(text, sentences = 2)
+        speak("According to Wikipedia")
+        print(results)
+        speak(results)
 
-        #opening google
-        elif 'open google' in text:
-            webbrowser.open("google.com")
-        
-        #playing music
-        elif'play' in text:
-            music_dir = 'C:\\Users\\91741\\Documents\\Friends'
-            songs = os.listdir(music_dir)
-            n = random.randint(0,len(songs))
-            os.startfile(os.path.join(music_dir, songs[n]))
+    #opening youtube
+    elif 'open youtube' in text:
+        webbrowser.open("youtube.com")
 
-        #Speaking current time
-        elif 'time' in text:
-            strTime = datetime.datetime.now().strftime("%H:%M:%S")
-            speak(f"Sir, The time is {strTime}")
+    #opening google
+    elif 'open google' in text:
+        webbrowser.open("google.com")
 
-        #opening VS code
-        elif 'code' in text:
-            codePath = "C:\\Users\\91741\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
-            os.startfile(codePath)
-        
-        #sending an email
-        elif 'mail' in text:
-            try:
-                speak("What should I say?")
-                content = takeCommand()
-                to = "receiveremail@email.com"
-                sendEmail(to, content)
-                speak("Email has been sent!")
-            except Exception as e:
-                print(e)
-                speak("Sorry! I cant send it now. Please try again later.")
-        elif 'quit' or 'bye' in text:
-            speak("Bye, See you later!")
-            exit()                
-        
+    #playing music
+    elif'play' in text:
+        music_dir = 'C:\\Users\\91741\\Documents\\Friends'
+        songs = os.listdir(music_dir)
+        n = random.randint(0,len(songs))
+        os.startfile(os.path.join(music_dir, songs[n]))
+
+    #Speaking current time
+    elif 'time' in text:
+        strTime = datetime.datetime.now().strftime("%H:%M:%S")
+        speak(f"Sir, The time is {strTime}")
+
+    #opening VS code
+    elif 'code' in text:
+        codePath = "C:\\Users\\91741\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+        os.startfile(codePath)
+
+    #sending an email
+    elif 'mail' in text:
+        try:
+            speak("What should I say?")
+            content = takeCommand()
+            to = "receiveremail@email.com"
+            sendEmail(to, content)
+            speak("Email has been sent!")
+        except Exception as e:
+            print(e)
+            speak("Sorry! I cant send it now. Please try again later.")
+    elif 'thank you' in text:
+        speak('Pleasure is all mine!')
+    elif 'bye' in text:
+        speak("Bye, See you later!")
+        exit()                
+
 
