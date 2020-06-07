@@ -5,7 +5,12 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from bs4 import BeautifulSoup as soup # for pulling data out of HTML and XML files 
+from pyowm.owm import OWM #Open Weather Maps
+import urllib.request as urllib2 #for fetching URL
+# import security
 import os
+import re
 import pyttsx3
 import datetime
 import speech_recognition as sr
@@ -15,6 +20,7 @@ import random
 import smtplib
 import pytz
 import subprocess
+import shutil
 
 
 # If modifying these scopes, delete the file token.pickle.
@@ -180,17 +186,25 @@ def takeCommand():
     return text.lower()
 
 def note(text):
-    date = datetime.datetime.now()
-    file_name = str(date).replace(":", "-") + "-note.txt"
+    # current_dir = os.getcwd()
+    # destination_dir  = current_dir + '\voicenote'
+    
+    # date = datetime.datetime.now()
+    # file_name = str(date).replace(":", "-") + "-note.txt"
+    
+    # os.chdir(destination_dir)
+    # dest = shutil.move(current_dir, destination_dir)
+    file_name = "voicenote.txt"
     with open(file_name, "w") as f:
         f.write(text)
 
     subprocess.Popen(["notepad.exe", file_name])
-
+    # os.chdir(current_dir)
+    
 # if __name__ == "__main__":
 
     # note('Python programming is fun!')
-wake = "hey jarvis"
+wake = "jarvis"
 service = authenticate_google()
 print("Start")
 # wishMe()
@@ -242,13 +256,33 @@ while True:
         print(results)
         speak(results)
 
-    #opening youtube
-    elif 'open youtube' in text:
-        webbrowser.open("youtube.com")
+    #open website
+    elif 'open' in text:
+        reg_ex = re.search('open (.+)', text)
+        if reg_ex:
+            domain = reg_ex.group(1)
+            print(domain)
+            url = 'https://www.' + domain +'.com'
+            webbrowser.open(url)
+            speak('The website you have requested has been opened for you Sir.')
+        else:
+            pass
 
-    #opening google
-    elif 'open google' in text:
-        webbrowser.open("google.com")
+    #read today's news
+    elif 'news' in text:
+        try:
+            news_url="https://news.google.com/news/rss"
+            Client=urllib2.urlopen(news_url)
+            xml_page=Client.read()
+            Client.close()
+            soup_page=soup(xml_page, "xml")
+            news_list=soup_page.findAll("item")
+            for news in news_list[:5]:
+                print(news.title.text.encode('utf-8'))
+                speak(news.title.text.encode('utf-8'))
+                
+        except Exception as e:
+            print(e)
 
     #playing music
     elif'play' in text:
@@ -257,11 +291,36 @@ while True:
         n = random.randint(0,len(songs))
         os.startfile(os.path.join(music_dir, songs[n]))
 
-    #Speaking current time
+    #current time
     elif 'time' in text:
         strTime = datetime.datetime.now().strftime("%H:%M:%S")
         speak(f"Sir, The time is {strTime}")
 
+    #current weather
+    elif 'weather' in text:
+        reg_ex = re.search('weather in (.*)', text)
+        if reg_ex:
+            city = reg_ex.group(1)
+            # api_key = security.encrypt_password()
+            owm = OWM('df95dca27f55d7d2daa552256306ef52')
+            mgr = owm.weather_manager()
+            obs = mgr.weather_at_place(city)
+            w = obs.weather
+            k = w.detailed_status
+            
+            sunrise = w.sunrise_time(timeformat='date')
+            sunrise_date = w.sunrise_time(timeformat='date').strftime("%H:%M:%S")
+
+            sunset = w.sunset_time(timeformat='date')
+            sunset_date = w.sunset_time(timeformat='date').strftime("%H:%M:%S")
+            x = w.temperature('celsius')
+
+            print(f'Current weather in {city} is {k}. Sunrise is at {sunrise_date}  and Sunset will be at {sunset_date}.')
+            print('The maximum temperature is %0.2f°C and the minimum temperature is %0.2f°C' % (x['temp_max'], x['temp_min']))
+            speak(f'Current weather in {city} is {k}. Sunrise is at {sunrise.hour} hours {sunrise.minute} minutes and {sunrise.second} seconds  and Sunset will be at {sunset.hour} hours {sunset.minute} minutes and {sunset.second} seconds.')
+            speak('The maximum temperature is %0.2f degree celsius and the minimum temperature is %0.2f degree celsius.' % (x['temp_max'], x['temp_min']))
+
+           
     #opening VS code
     elif 'code' in text:
         codePath = "C:\\Users\\91741\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
