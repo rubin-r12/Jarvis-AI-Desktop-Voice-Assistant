@@ -9,9 +9,10 @@ from bs4 import BeautifulSoup as soup # for pulling data out of HTML and XML fil
 from pyowm.owm import OWM #Open Weather Maps
 import urllib.request as urllib2 #for fetching URL
 import pafy # To Retrieve YouTube content and metadata
+from distutils import spawn #to find .exe files
 import os
 import re
-import pyttsx3
+import pyttsx3 
 import datetime
 import speech_recognition as sr
 import wikipedia
@@ -158,6 +159,15 @@ def wishMe():
     
     speak("I am Jarvis. Please tell me how can I help you")
 
+def goodBye():
+    hour = int(datetime.datetime.now().hour)
+    if hour > 21:
+        speak('Have a good night sir! See you tomorrow')
+        exit()
+    else:
+        speak("Bye, See you later!")
+        exit()     
+
 def sendEmail(to, content):
     server = smtplib.SMTP('smtp.gmail.com',587)
     server.ehlo()
@@ -248,12 +258,11 @@ while True:
             note(note_text)
             speak("I've made a note of that.")
 
-    #searching wikipedia based on text
-    if 'wikipedia' in text:
-        speak('Searching Wikipedia...')
+    #ask me anything
+    if 'about' in text:
+        reg_ex = re.search('about (.+)', text)
         text = text.replace("wikipedia","")
-        results = wikipedia.summary(text, sentences = 2)
-        speak("According to Wikipedia")
+        results = wikipedia.summary(text, sentences = 5)
         print(results)
         speak(results)
 
@@ -314,8 +323,6 @@ while True:
             playurl = best.url
             webbrowser.open(playurl)
             speak('Playing '+ video.title)
-            # media = vlc.MediaPlayer(playurl)
-            # media.play()
 
             if flag == 0:
                 speak('I have not found anything in Youtube ')
@@ -366,10 +373,36 @@ while True:
         except Exception as e:
             print(e)
             speak("Sorry! I cant send it now. Please try again later.")
+
+    #launch any application
+    elif 'launch' in text:
+        reg_ex = re.search('launch (.+)', text)
+        try:
+            appname = reg_ex.group(1)
+            # appname1 = appname+".app"
+            # subprocess.Popen(["open", "-n", "/Applications/" + appname1], stdout=subprocess.PIPE)
+            speak('Launching' + appname)
+            os.startfile(spawn.find_executable(appname))
+        except:
+            speak('I cant find the application')
+
+    #greetings
+    elif 'hello' in text:
+        wishMe()
+
+    elif 'hi' in text:
+        wishMe()
+
     elif 'thank you' in text:
         speak('Pleasure is all mine!')
+    
+    elif 'sorry' in text:
+        speak('No Problem sir')
+    
+    elif 'good job'in text:
+        speak('thank you')
+    
     elif 'bye' in text:
-        speak("Bye, See you later!")
-        exit()                
+        goodBye()           
 
 
