@@ -8,7 +8,7 @@ from google.auth.transport.requests import Request
 from bs4 import BeautifulSoup as soup # for pulling data out of HTML and XML files 
 from pyowm.owm import OWM #Open Weather Maps
 import urllib.request as urllib2 #for fetching URL
-# import security
+import pafy # To Retrieve YouTube content and metadata
 import os
 import re
 import pyttsx3
@@ -18,9 +18,10 @@ import wikipedia
 import webbrowser
 import random
 import smtplib
-import pytz
+import pytz #for accurate and cross platform timezone calculations
 import subprocess
 import shutil
+import youtube_dl
 
 
 # If modifying these scopes, delete the file token.pickle.
@@ -264,7 +265,7 @@ while True:
             print(domain)
             url = 'https://www.' + domain +'.com'
             webbrowser.open(url)
-            speak('The website you have requested has been opened for you Sir.')
+            speak(domain + 'has been opened for you Sir.')
         else:
             pass
 
@@ -284,12 +285,40 @@ while True:
         except Exception as e:
             print(e)
 
-    #playing music
-    elif'play' in text:
-        music_dir = 'C:\\Users\\91741\\Documents\\Friends'
-        songs = os.listdir(music_dir)
-        n = random.randint(0,len(songs))
-        os.startfile(os.path.join(music_dir, songs[n]))
+    #playing music in local
+    # elif'' in text:
+    #     music_dir = 'C:\\Users\\91741\\Documents\\Friends'
+    #     songs = os.listdir(music_dir)
+    #     n = random.randint(0,len(songs))
+    #     os.startfile(os.path.join(music_dir, songs[n]))
+
+    #play youtube song
+    elif 'play' in text:
+        speak('What song shall I play Sir?')
+        mysong = takeCommand()
+        if mysong:
+            flag = 0
+            url = "https://www.youtube.com/results?search_query=" + mysong.replace(' ', '+')
+            response = urllib2.urlopen(url)
+            html = response.read()
+            soup1 = soup(html,"lxml")
+            url_list = []
+            for vid in soup1.findAll(attrs={'class':'yt-uix-tile-link'}):
+                if ('https://www.youtube.com' + vid['href']).startswith("https://www.youtube.com/watch?v="):
+                    flag = 1
+                    final_url = 'https://www.youtube.com' + vid['href']
+                    url_list.append(final_url)
+
+            video = pafy.new(url_list[0])
+            best = video.getbest()
+            playurl = best.url
+            webbrowser.open(playurl)
+            speak('Playing '+ video.title)
+            # media = vlc.MediaPlayer(playurl)
+            # media.play()
+
+            if flag == 0:
+                speak('I have not found anything in Youtube ')
 
     #current time
     elif 'time' in text:
@@ -315,7 +344,7 @@ while True:
             sunset_date = w.sunset_time(timeformat='date').strftime("%H:%M:%S")
             x = w.temperature('celsius')
 
-            print(f'Current weather in {city} is {k}. Sunrise is at {sunrise_date}  and Sunset will be at {sunset_date}.')
+            print(f'Current weather in {city} is {k}. Sunrise is at {sunrise_date} UTC  and Sunset will be at {sunset_date} UTC.')
             print('The maximum temperature is %0.2f°C and the minimum temperature is %0.2f°C' % (x['temp_max'], x['temp_min']))
             speak(f'Current weather in {city} is {k}. Sunrise is at {sunrise.hour} hours {sunrise.minute} minutes and {sunrise.second} seconds  and Sunset will be at {sunset.hour} hours {sunset.minute} minutes and {sunset.second} seconds.')
             speak('The maximum temperature is %0.2f degree celsius and the minimum temperature is %0.2f degree celsius.' % (x['temp_max'], x['temp_min']))
