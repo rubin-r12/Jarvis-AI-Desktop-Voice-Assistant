@@ -23,6 +23,9 @@ import pytz #for accurate and cross platform timezone calculations
 import subprocess
 import shutil
 import youtube_dl
+import json
+import ctypes
+
 
 
 # If modifying these scopes, delete the file token.pickle.
@@ -191,20 +194,11 @@ def takeCommand():
         print(f"User said: {text}\n")
 
     except Exception as e:
-        # print(e)
-        # print("Please try again.")
         return "None"
     return text.lower()
 
 def note(text):
-    # current_dir = os.getcwd()
-    # destination_dir  = current_dir + '\voicenote'
-    
-    # date = datetime.datetime.now()
-    # file_name = str(date).replace(":", "-") + "-note.txt"
-    
-    # os.chdir(destination_dir)
-    # dest = shutil.move(current_dir, destination_dir)
+
     file_name = "voicenote.txt"
     with open(file_name, "w") as f:
         f.write(text)
@@ -218,7 +212,7 @@ def note(text):
 wake = "jarvis"
 service = authenticate_google()
 print("Start")
-# wishMe()
+
 
 while True:
     print("Listening...")
@@ -227,11 +221,7 @@ while True:
     if text.count(wake) > 0:
         speak('I am Ready.')
         text = takeCommand()
-    # Checking Calender for any upcoming events
-    # if 'event'in text:
-        # speak('sure sir, what should i look for?')
-        # text = takeCommand()
-        # try:
+
     CALENDAR_STRS = ["what do i have", "do i have plans","am i busy"]
     for phrase in CALENDAR_STRS:
         if phrase in text:
@@ -241,12 +231,6 @@ while True:
             else:
                 speak("I don't understand.")
                     
-        # except Exception as e:
-        #     # print(e)
-        #     speak('Please try again.')
-            
-        # date = get_date(text)
-        # get_events(date, service) 
             
     #Make a Note using SpeechToText
     NOTE_STRS = ["make a note", "write this down", "remember this"]
@@ -294,7 +278,7 @@ while True:
         except Exception as e:
             print(e)
 
-    #playing music in local
+    #playing music on local system
     # elif'' in text:
     #     music_dir = 'C:\\Users\\91741\\Documents\\Friends'
     #     songs = os.listdir(music_dir)
@@ -356,11 +340,19 @@ while True:
             speak(f'Current weather in {city} is {k}. Sunrise is at {sunrise.hour} hours {sunrise.minute} minutes and {sunrise.second} seconds  and Sunset will be at {sunset.hour} hours {sunset.minute} minutes and {sunset.second} seconds.')
             speak('The maximum temperature is %0.2f degree celsius and the minimum temperature is %0.2f degree celsius.' % (x['temp_max'], x['temp_min']))
 
-           
-    #opening VS code
-    elif 'code' in text:
-        codePath = "C:\\Users\\91741\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
-        os.startfile(codePath)
+    #change wallpaper
+    elif 'wallpaper' in text:
+        api_key = '1Kr_PV0Bm2uujrFfdWjcFK11ANPKCZpJxwQoTUXfbc0'
+        path = "C:/Users/91741/Downloads/Wallpapers/1"
+        url = 'https://api.unsplash.com/photos/random?client_id=' + api_key
+        f = urllib2.urlopen(url)
+        json_string = f.read()
+        f.close()
+        parsed_json = json.loads(json_string)
+        photo = parsed_json['urls']['raw'] + "&w=1500&dpr=2"
+        urllib2.urlretrieve(photo, path) # Location where the image is downloaded
+        ctypes.windll.user32.SystemParametersInfoW(20, 0, path , 0)
+        speak('wallpaper changed successfully')
 
     #sending an email
     elif 'mail' in text:
@@ -379,8 +371,6 @@ while True:
         reg_ex = re.search('launch (.+)', text)
         try:
             appname = reg_ex.group(1)
-            # appname1 = appname+".app"
-            # subprocess.Popen(["open", "-n", "/Applications/" + appname1], stdout=subprocess.PIPE)
             speak('Launching' + appname)
             os.startfile(spawn.find_executable(appname))
         except:
