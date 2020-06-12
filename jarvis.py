@@ -25,6 +25,8 @@ import shutil
 import youtube_dl
 import json
 import ctypes
+import wolframalpha
+from docx import Document # for opening docx
 
 
 
@@ -206,12 +208,10 @@ def note(text):
     subprocess.Popen(["notepad.exe", file_name])
     # os.chdir(current_dir)
     
-# if __name__ == "__main__":
 
-    # note('Python programming is fun!')
 wake = "jarvis"
 service = authenticate_google()
-print("Start")
+print("Start by saying 'Hey Jarvis'")
 
 
 while True:
@@ -221,7 +221,8 @@ while True:
     if text.count(wake) > 0:
         speak('I am Ready.')
         text = takeCommand()
-
+        
+    # Calender
     CALENDAR_STRS = ["what do i have", "do i have plans","am i busy"]
     for phrase in CALENDAR_STRS:
         if phrase in text:
@@ -231,8 +232,8 @@ while True:
             else:
                 speak("I don't understand.")
                     
-            
-    #Make a Note using SpeechToText
+    
+    #Make a Note
     NOTE_STRS = ["make a note", "write this down", "remember this"]
     # elif 'note' in text:
     for phrase in NOTE_STRS:
@@ -242,16 +243,22 @@ while True:
             note(note_text)
             speak("I've made a note of that.")
 
-    #ask me anything
-    if 'about' in text:
-        reg_ex = re.search('about (.+)', text)
-        text = text.replace("wikipedia","")
-        results = wikipedia.summary(text, sentences = 5)
-        print(results)
-        speak(results)
+    # #ask me anything
+    # if 'about' in text:
+    #     reg_ex = re.search('about (.+)', text)
+    #     text = text.replace("wikipedia","")
+    #     results = wikipedia.summary(text, sentences = 5)
+    #     print(results)
+    #     speak(results)
+
+    # Greetings
+    greetings = ['hello','hi']
+    for phrase in greetings:
+        if phrase in text:
+            wishMe()
 
     #open website
-    elif 'open' in text:
+    if 'open' in text:
         reg_ex = re.search('open (.+)', text)
         if reg_ex:
             domain = reg_ex.group(1)
@@ -312,33 +319,33 @@ while True:
                 speak('I have not found anything in Youtube ')
 
     #current time
-    elif 'time' in text:
-        strTime = datetime.datetime.now().strftime("%H:%M:%S")
-        speak(f"Sir, The time is {strTime}")
+    # elif 'time' in text:
+    #     strTime = datetime.datetime.now().strftime("%H:%M:%S")
+    #     speak(f"Sir, The time is {strTime}")
 
     #current weather
-    elif 'weather' in text:
-        reg_ex = re.search('weather in (.*)', text)
-        if reg_ex:
-            city = reg_ex.group(1)
-            # api_key = security.encrypt_password()
-            owm = OWM('df95dca27f55d7d2daa552256306ef52')
-            mgr = owm.weather_manager()
-            obs = mgr.weather_at_place(city)
-            w = obs.weather
-            k = w.detailed_status
+    # elif 'weather' in text:
+    #     reg_ex = re.search('weather in (.*)', text)
+    #     if reg_ex:
+    #         city = reg_ex.group(1)
+    #         # api_key = security.encrypt_password()
+    #         owm = OWM('df95dca27f55d7d2daa552256306ef52')
+    #         mgr = owm.weather_manager()
+    #         obs = mgr.weather_at_place(city)
+    #         w = obs.weather
+    #         k = w.detailed_status
             
-            sunrise = w.sunrise_time(timeformat='date')
-            sunrise_date = w.sunrise_time(timeformat='date').strftime("%H:%M:%S")
+    #         sunrise = w.sunrise_time(timeformat='date')
+    #         sunrise_date = w.sunrise_time(timeformat='date').strftime("%H:%M:%S")
 
-            sunset = w.sunset_time(timeformat='date')
-            sunset_date = w.sunset_time(timeformat='date').strftime("%H:%M:%S")
-            x = w.temperature('celsius')
+    #         sunset = w.sunset_time(timeformat='date')
+    #         sunset_date = w.sunset_time(timeformat='date').strftime("%H:%M:%S")
+    #         x = w.temperature('celsius')
 
-            print(f'Current weather in {city} is {k}. Sunrise is at {sunrise_date} UTC  and Sunset will be at {sunset_date} UTC.')
-            print('The maximum temperature is %0.2f°C and the minimum temperature is %0.2f°C' % (x['temp_max'], x['temp_min']))
-            speak(f'Current weather in {city} is {k}. Sunrise is at {sunrise.hour} hours {sunrise.minute} minutes and {sunrise.second} seconds  and Sunset will be at {sunset.hour} hours {sunset.minute} minutes and {sunset.second} seconds.')
-            speak('The maximum temperature is %0.2f degree celsius and the minimum temperature is %0.2f degree celsius.' % (x['temp_max'], x['temp_min']))
+    #         print(f'Current weather in {city} is {k}. Sunrise is at {sunrise_date} UTC  and Sunset will be at {sunset_date} UTC.')
+    #         print('The maximum temperature is %0.2f°C and the minimum temperature is %0.2f°C' % (x['temp_max'], x['temp_min']))
+    #         speak(f'Current weather in {city} is {k}. Sunrise is at {sunrise.hour} hours {sunrise.minute} minutes and {sunrise.second} seconds  and Sunset will be at {sunset.hour} hours {sunset.minute} minutes and {sunset.second} seconds.')
+    #         speak('The maximum temperature is %0.2f degree celsius and the minimum temperature is %0.2f degree celsius.' % (x['temp_max'], x['temp_min']))
 
     #change wallpaper
     elif 'wallpaper' in text:
@@ -371,18 +378,22 @@ while True:
         reg_ex = re.search('launch (.+)', text)
         try:
             appname = reg_ex.group(1)
-            speak('Launching' + appname)
-            os.startfile(spawn.find_executable(appname))
+            if appname == "word":
+                
+                speak('Launching' + appname)
+                os.startfile('test.docx')
+                speak("what do you want me to write down")
+
+                document = Document('test.docx')
+                document.add_paragraph(takeCommand())
+                document.save('test.docx')
+            else:
+                speak('Launching' + appname)
+                os.startfile(spawn.find_executable(appname))
         except:
-            speak('I cant find the application')
-
-    #greetings
-    elif 'hello' in text:
-        wishMe()
-
-    elif 'hi' in text:
-        wishMe()
-
+            # speak('I cant find the application')
+            pass
+    
     elif 'thank you' in text:
         speak('Pleasure is all mine!')
     
@@ -393,6 +404,23 @@ while True:
         speak('thank you')
     
     elif 'bye' in text:
-        goodBye()           
+        goodBye()   
+
+    #search engine
+    elif(True):
+        try:
+            app_id = 'LVGG7X-TXLHLAR25T'
+            client = wolframalpha.Client(app_id)    # Instance of wolfram alpha client class
+
+            res = client.query(text)                # Stores the response from wolf ram alpha
+                                                
+            answer = next(res.results).text         #Include only the text from the response
+            print(answer)
+            speak(answer)
+        except:
+            speak('Sorry I couldnt find that one.')
+    
+    
+
 
 
